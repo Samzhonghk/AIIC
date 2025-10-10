@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+        <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; }
+        .container { max-width: 500px; margin: 40px auto; }
+        .card { border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: none; }
+        .card-title { color: #3498db; font-weight: bold; }
+        .photo-preview { width: 120px; height: 120px; object-fit: cover; border-radius: 50%; border: 1px solid #ccc; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-body">
+                <form id="clientForm">
+                    <div class="mb-3 text-center">
+                       <img src="" alt="customer photo" id="photoPreview" class="photo-preview">
+                       <input type="file" class="form-control mt-2" id="clientPhoto" accept="image/*">
+
+                    </div>
+                    <div class="mb-3">
+                        <label for="clientId" class="form-label">Client ID</label>
+                        <input type="text" class="form-control" id="clientId" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="clientName" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="clientName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="clientPhone" class="form-label">Phone Number</label>
+                        <input type="text" class="form-control" id="clientPhone" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="clientOccupation" class="form-label">Occupation</label>
+                        <input type="text" class="form-control" id="clientOccupation" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="clientAddress" class="form-label">Address</label>
+                        <input type="text" class="form-control" id="clientAddress" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <a href="dashboard.html" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        // 获取URL参数
+        function getClientId(){
+            const url = new URL(window.location.href);
+            return url.searchParams.get(name);
+        }
+
+        // 加载客户信息
+        
+        
+    </script>
+</body>
+</html>

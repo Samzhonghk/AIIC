@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户列表</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; }
+        .container { max-width: 900px; margin: 40px auto; }
+        .table th { background-color: #3498db; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="mb-4 text-center" style="color:#3498db;font-weight:bold;">客户详情列表</h2>
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Occupation</th>
+                    <th>Address</th>
+                    <th>Photo</th>
+                    <th>Operation</th>
+                </tr>
+            </thead>
+            <tbody id="clientsBody">
+                <!-- 客户数据将通过JS动态加载 -->
+            </tbody>
+        </table>
+        <a href="create_client.html" class="btn btn-primary">新建客户</a>
+        <a href="dashboard.html" class="btn btn-secondary ms-2">返回首页</a>
+    </div>
+    <script>
+        fetch('http://localhost:3000/api/clients/all')
+            .then(res => res.json())
+            .then(data => {
+                const clientsBody = document.getElementById('clientsBody');
+                console.log('status is '+data.success);
+                if (data.success && Array.isArray(data.clients)) {
+                    data.clients.forEach(client => {
+                        console.log('我来了');
+                        clientsBody.innerHTML += `
+                            <tr>
+                                <td>${client.id}</td>
+                                <td>${client.name}</td>
+                                <td>${client.phone}</td>
+                                <td>${client.occupation}</td>
+                                <td>${client.address}</td>
+                                <td>${client.photo ? `<img src="${client.photo}" style="width:40px;height:40px;border-radius:50%;">` : ''}</td>
+                                <td>
+                                    <a href="edit_customer_info.html?customer_id=${client.id}" class="btn btn-sm btn-warning">Edit</a>
+                                    <a href="loan_calculator.html?customer_id=${client.id}" class="btn btn-sm btn-warning">Loan Calculate</a>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    clientsBody.innerHTML = '<tr><td colspan="7" class="text-center">暂无客户数据</td></tr>';
+                }
+            })
+            .catch(() => {
+                document.getElementById('clientsBody').innerHTML = '<tr><td colspan="7" class="text-center">加载失败</td></tr>';
+            });
+    </script>
+</body>
+</html>
