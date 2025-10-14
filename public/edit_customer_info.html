@@ -54,7 +54,7 @@
         const clientId = getQueryParam('customer_id');
         if (clientId) {
             console.log("client id is: "+clientId);
-            fetch(`http://localhost:3000/api/clients/${clientId}`)
+            fetch(`/api/clients/${clientId}`)
                 .then(res => res.json())
                 .then(data => {
                     console.log('here address is :'+data.client.address);

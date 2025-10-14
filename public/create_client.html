@@ -148,7 +148,7 @@
             formData.append('address', document.getElementById('clientAddress').value);
             const photoFile = document.getElementById('clientPhoto').files[0];
             if (photoFile) formData.append('photo', photoFile);
-            fetch('http://localhost:3000/api/clients', {
+            fetch('/api/clients', {
                 method: 'POST',
                 body: formData
             })

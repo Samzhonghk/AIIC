@@ -58,7 +58,7 @@
         // 页面加载时获取客户信息
         const clientId = getQueryParam('customer_id');
         if (clientId) {
-            fetch(`http://localhost:3000/api/clients/${clientId}`)
+            fetch(`/api/clients/${clientId}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.success && data.client) {
@@ -97,7 +97,7 @@
             formData.append('address', document.getElementById('clientAddress').value);
             const photoFile = document.getElementById('clientPhoto').files[0];
             if (photoFile) formData.append('photo', photoFile);
-            fetch(`http://localhost:3000/api/clients/${clientId}`, {
+            fetch(`/api/clients/${clientId}`, {
                 method: 'PUT',
                 body: formData
             })

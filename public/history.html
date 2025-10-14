@@ -151,13 +151,13 @@
             e.preventDefault();
             const keyword = document.getElementById('searchInput').value.trim();
             // 请求后端客户信息
-            fetch(`http://localhost:3000/api/clients/${keyword}`)
+            fetch(`/api/clients/${keyword}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.success && data.client) {
                         renderCustomerInfo(data.client);
                         // 请求客户贷款记录
-                        fetch(`http://localhost:3000/api/records/${data.client.id}`)
+                        fetch(`/api/records/${data.client.id}`)
                             .then(res => res.json())
                             .then(recordData => {
                                 if (recordData.success && Array.isArray(recordData.records)) {

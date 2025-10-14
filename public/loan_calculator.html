@@ -3,39 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loan Calculator</title>
+    <title>Create New Loan for Existing Customer</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; }
-        .container { max-width: 500px; margin: 40px auto; }
+        .container { max-width: 700px; margin: 40px auto; }
         .card { border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: none; }
         .card-title { color: #3498db; font-weight: bold; }
+        .form-section { margin-bottom: 32px; }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- 客户信息展示 -->
+        <div class="card form-section">
+            <div class="card-body">
+                <h4 class="card-title mb-3">Customer Information</h4>
+                <div id="customerInfo">
+                    <div class="mb-2"><strong>Customer Number:</strong> <span id="customerNumber"></span></div>
+                    <div class="mb-2"><strong>Customer Name:</strong> <span id="customerName"></span></div>
+                    <div class="mb-2"><strong>Phone:</strong> <span id="customerPhone"></span></div>
+                    <div class="mb-2"><strong>Address:</strong> <span id="customerAddress"></span></div>
+                </div>
+            </div>
+        </div>
+        <!-- 新贷款表单 -->
         <div class="card">
             <div class="card-body">
-                <h4 class="card-title mb-3">Loan Condition Calculator</h4>
-                <form id="calcForm">
+                <h4 class="card-title mb-3">Create New Loan</h4>
+                <form id="loanForm">
                     <div class="mb-3">
-                        <label for="customerNumber" class="form-label">Customer Number</label>
-                        <input type="text" class="form-control" id="customerNumber" readonly>
+                        <label class="form-label">Loan Number</label>
+                        <input type="text" class="form-control" id="loanNumber" readonly>
                     </div>
                     <div class="mb-3">
-                        <label for="loanAmount" class="form-label">Loan Amount</label>
+                        <label class="form-label">Created Date</label>
+                        <input type="text" class="form-control" id="createdDate" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Loan Amount</label>
                         <input type="number" class="form-control" id="loanAmount" required min="1">
                     </div>
                     <div class="mb-3">
-                        <label for="interestRate" class="form-label">Interest Rate (%)</label>
-                        <input type="number" class="form-control" id="interestRate" value="5" required min="0" step="0.01">
+                        <label class="form-label">Interest Amount</label>
+                        <select class="form-select" id="interestSelect">
+                            <option value="0.4">40%</option>
+                            <option value="0.3">30%</option>
+                            <option value="0.2">20%</option>
+                            <option value="0.1">10%</option>
+                        </select>
+                        <input type="number" class="form-control mt-2" id="interestAmount" readonly>
                     </div>
                     <div class="mb-3">
-                        <label for="loanTerm" class="form-label">Loan Term (months)</label>
-                        <input type="number" class="form-control" id="loanTerm" value="12" required min="1">
+                        <label class="form-label">Payment Frequency</label>
+                        <select class="form-select" id="paymentFrequency">
+                            <option value="1">Weekly</option>
+                            <option value="2">Fornightly</option>
+                        </select>
                     </div>
-                    <button type="submit" class="btn btn-primary">Calculate</button>
-                    <a href="new_loan.html" class="btn btn-secondary ms-2">Cancel</a>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Amount</label>
+                        <input type="number" class="form-control" id="paymentAmount" required min="100" value="100">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Due Date</label>
+                        <input type="text" class="form-control" id="paymentDueDate" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Lender Print Name</label>
+                        <input type="text" class="form-control" id="lenderName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Customer Name</label>
+                        <input type="text" class="form-control" id="customerNameInput" readonly>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Loan</button>
+                    <a href="client_list.html" class="btn btn-secondary ms-2">Cancel</a>
                 </form>
                 <div id="result" class="mt-4"></div>
             </div>
@@ -47,34 +90,168 @@
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(name);
         }
-        document.getElementById('customerNumber').value = getQueryParam('customerNumber') || getQueryParam('customer_id')||'';
-        // document.getElementById('customerNumber').value = getQueryParam('customer_id') || '';
-
-        document.getElementById('calcForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const loanAmount = parseFloat(document.getElementById('loanAmount').value);
-            const interestRate = parseFloat(document.getElementById('interestRate').value);
-            const loanTerm = parseInt(document.getElementById('loanTerm').value);
-            if (isNaN(loanAmount) || isNaN(interestRate) || isNaN(loanTerm)) {
-                alert('Please enter valid numbers.');
-                return;
+        // 通过后端接口获取客户信息
+        async function fetchCustomerInfo(customerId) {
+            try {
+                const res = await fetch(`/api/clients/${encodeURIComponent(customerId)}`);
+                console.log('Fetch customer response status:', res.status);
+                if (!res.ok) throw new Error('Customer not found');
+                return await res.json();
+            } catch (err) {
+                return null;
             }
-            // 简单利息计算
-            const interest = loanAmount * (interestRate / 100) * (loanTerm / 12);
-            const totalRepayment = loanAmount + interest;
-            // 还款日（假设今天起 loanTerm 月后）
+        }
+        // 自动生成 Loan Number（实际应从数据库获取最大值+1）
+        let loanNumberSeed = 1;
+        function padLoanNumber(num) {
+            return num.toString().padStart(6, '0');
+        }
+        function getNextLoanNumber() {
+            // 实际应从后端获取最大 loan number
+            return padLoanNumber(loanNumberSeed++);
+        }
+        // 设置客户信息（异步获取）
+        const customerId = getQueryParam('customerNumber') || getQueryParam('customer_id') || '';
+        async function setCustomerInfo() {
+            if (!customerId) return;
+            const customer = await fetchCustomerInfo(customerId);
+            console.log('Fetched customer name:', customer.client.name);
+            document.getElementById('customerNumber').textContent = customer ? customer.client.id : customerId;
+            document.getElementById('customerName').textContent = customer ? customer.client.name : '';
+            document.getElementById('customerPhone').textContent = customer ? customer.client.phone : '';
+            document.getElementById('customerAddress').textContent = customer ? customer.client.address : '';
+            document.getElementById('customerNameInput').value = customer ? customer.client.name : '';
+        }
+        setCustomerInfo();
+        // 设置 Loan Number 和 Created Date
+        document.getElementById('loanNumber').value = getNextLoanNumber();
+        // 新西兰时间（奥克兰）
+        function getNZDateString() {
             const now = new Date();
-            now.setMonth(now.getMonth() + loanTerm);
-            const repaymentDate = now.toISOString().split('T')[0];
-            document.getElementById('result').innerHTML = `
-                <div class="alert alert-info">
-                    <strong>Calculation Result:</strong><br>
-                    Loan Amount: ￥${loanAmount.toFixed(2)}<br>
-                    Interest: ￥${interest.toFixed(2)}<br>
-                    Total Repayment: ￥${totalRepayment.toFixed(2)}<br>
-                    Repayment Date: ${repaymentDate}
-                </div>
-            `;
+            // 直接用 toLocaleString 获取奥克兰时间的年月日
+            const nztString = now.toLocaleString('en-NZ', {
+                timeZone: 'Pacific/Auckland',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            // nztString 格式如 "11/10/2025"（NZ: 日/月/年）或 "10/11/2025"（美式: 月/日/年），需按 NZ 格式处理
+            const parts = nztString.split('/');
+            // 兼容不同浏览器，优先按 NZ 格式（日/月/年）
+            let day, month, year;
+            if (parseInt(parts[0], 10) > 12) {
+                // 第一个数字大于12，肯定是日
+                day = parts[0]; month = parts[1]; year = parts[2];
+            } else {
+                // 否则按 NZ 格式
+                day = parts[0]; month = parts[1]; year = parts[2];
+            }
+            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+        document.getElementById('createdDate').value = getNZDateString();
+        // 利息额自动计算
+        function updateInterestAmount() {
+            const loanAmount = parseFloat(document.getElementById('loanAmount').value) || 0;
+            const interestRate = parseFloat(document.getElementById('interestSelect').value);
+            document.getElementById('interestAmount').value = (loanAmount * interestRate).toFixed(2);
+        }
+        document.getElementById('loanAmount').addEventListener('input', updateInterestAmount);
+        // 禁止 Loan Amount 为负数
+        document.getElementById('loanAmount').addEventListener('input', function() {
+            const input = document.getElementById('loanAmount');
+            if (parseFloat(input.value) < 0) {
+                input.value = '';
+                document.getElementById('interestAmount').value = '';
+                alert('Loan Amount Cannot be negative');
+            }
+        });
+        document.getElementById('interestSelect').addEventListener('change', updateInterestAmount);
+        // 还款日自动计算
+        function getNextFriday(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const daysToFriday = (5 - day + 7) % 7 || 7;
+            d.setDate(d.getDate() + daysToFriday);
+            return d;
+        }
+        function updatePaymentDueDate() {
+            const loanAmount = parseFloat(document.getElementById('loanAmount').value) || 0;
+            const interestAmount = parseFloat(document.getElementById('interestAmount').value) || 0;
+            const paymentAmount = parseFloat(document.getElementById('paymentAmount').value) || 100;
+            const frequency = parseInt(document.getElementById('paymentFrequency').value); // 1=weekly, 2=fornightly
+            if ((frequency === 1 && paymentAmount < 100) || (frequency === 2 && paymentAmount < 200)) return;
+            const total = loanAmount + interestAmount;
+            const periods = Math.ceil(total / paymentAmount);
+            const createdDate = document.getElementById('createdDate').value;
+            let dueDate = getNextFriday(createdDate);
+            const intervalDays = frequency === 1 ? 7 : 14;
+            dueDate.setDate(dueDate.getDate() + intervalDays * periods);
+            document.getElementById('paymentDueDate').value = dueDate.toISOString().split('T')[0];
+        }
+        document.getElementById('loanAmount').addEventListener('input', updatePaymentDueDate);
+        document.getElementById('interestAmount').addEventListener('input', updatePaymentDueDate);
+        document.getElementById('paymentAmount').addEventListener('input', updatePaymentDueDate);
+        document.getElementById('paymentFrequency').addEventListener('change', updatePaymentDueDate);
+        // 动态调整每次还款金额的最小值
+        document.getElementById('paymentFrequency').addEventListener('change', function() {
+            const freq = parseInt(document.getElementById('paymentFrequency').value);
+            const paymentAmountInput = document.getElementById('paymentAmount');
+            if (freq === 1) {
+                paymentAmountInput.min = 100;
+                paymentAmountInput.value = 100;
+            } else if (freq === 2) {
+                // paymentAmountInput.min = 200;
+                // paymentAmountInput.value = 200;
+                paymentAmountInput.min = 200;
+                paymentAmountInput.value = 200;
+            }
+        });
+        document.getElementById('createdDate').addEventListener('input', updatePaymentDueDate);
+        // 初始化利息和还款日
+        updateInterestAmount();
+        updatePaymentDueDate();
+        // 表单提交：先发送到后端 /api/loans，如果失败则把数据保存到 sessionStorage，最后跳转到 e_contract.html
+        document.getElementById('loanForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const payload = {
+                loanNumber: document.getElementById('loanNumber').value,
+                createdDate: document.getElementById('createdDate').value,
+                loanAmount: parseFloat(document.getElementById('loanAmount').value) || 0,
+                interestRate: parseFloat(document.getElementById('interestSelect').value) || 0,
+                interestAmount: parseFloat(document.getElementById('interestAmount').value) || 0,
+                paymentFrequency: parseInt(document.getElementById('paymentFrequency').value) || 1,
+                paymentAmount: parseFloat(document.getElementById('paymentAmount').value) || 0,
+                paymentDueDate: document.getElementById('paymentDueDate').value,
+                lenderName: document.getElementById('lenderName').value,
+                customerId: customerId,
+                customerName: document.getElementById('customerNameInput').value
+            };
+
+            try {
+                const res = await fetch('/api/loans', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    // 假设后端返回 { success: true, loanNumber: '000123' }
+                    const savedLoanNumber = data && data.loanNumber ? data.loanNumber : payload.loanNumber;
+                    // 保存到 sessionStorage 以便 e_contract 页面读取
+                    sessionStorage.setItem('lastLoan', JSON.stringify(Object.assign({}, payload, { loanNumber: savedLoanNumber })));
+                    // 跳转到打印页面
+                    // window.location.href = `e_contract.html?loanNumber=${encodeURIComponent(savedLoanNumber)}`;
+                    return;
+                }
+                // 非 ok，也作为后备保存
+            } catch (err) {
+                // 网络或 CORS 错误
+                console.warn('POST /api/loans failed, falling back to sessionStorage', err);
+            }
+
+            // 后端不可用时，使用 sessionStorage 保存并跳转
+            sessionStorage.setItem('lastLoan', JSON.stringify(payload));
+            // window.location.href = `e_contract.html?loanNumber=${encodeURIComponent(payload.loanNumber)}`;
         });
     </script>
 </body>

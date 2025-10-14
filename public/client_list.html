@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>客户列表</title>
+    <title>Client List</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; }
@@ -13,7 +13,7 @@
 </head>
 <body>
     <div class="container">
-        <h2 class="mb-4 text-center" style="color:#3498db;font-weight:bold;">客户详情列表</h2>
+        <h2 class="mb-4 text-center" style="color:#3498db;font-weight:bold;">Client List</h2>
         <table class="table table-striped table-hover">
             <thead>
                 <tr>
@@ -30,11 +30,11 @@
                 <!-- 客户数据将通过JS动态加载 -->
             </tbody>
         </table>
-        <a href="create_client.html" class="btn btn-primary">新建客户</a>
-        <a href="dashboard.html" class="btn btn-secondary ms-2">返回首页</a>
+        <a href="create_client.html" class="btn btn-primary">Create New Client</a>
+        <a href="dashboard.html" class="btn btn-secondary ms-2">Back to Dashboard</a>
     </div>
     <script>
-        fetch('http://localhost:3000/api/clients/all')
+        fetch('/api/clients/all')
             .then(res => res.json())
             .then(data => {
                 const clientsBody = document.getElementById('clientsBody');
@@ -58,11 +58,11 @@
                         `;
                     });
                 } else {
-                    clientsBody.innerHTML = '<tr><td colspan="7" class="text-center">暂无客户数据</td></tr>';
+                    clientsBody.innerHTML = '<tr><td colspan="7" class="text-center">No customer data</td></tr>';
                 }
             })
             .catch(() => {
-                document.getElementById('clientsBody').innerHTML = '<tr><td colspan="7" class="text-center">加载失败</td></tr>';
+                document.getElementById('clientsBody').innerHTML = '<tr><td colspan="7" class="text-center">Failed to load</td></tr>';
             });
     </script>
 </body>

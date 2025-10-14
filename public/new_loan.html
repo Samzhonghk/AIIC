@@ -52,7 +52,7 @@
                 return;
             }
             // 先请求后端校验客户号是否存在
-            fetch(`http://localhost:3000/api/clients/${customerNumber}`)
+            fetch(`/api/clients/${customerNumber}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.success && data.client) {
