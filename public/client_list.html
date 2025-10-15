@@ -22,8 +22,13 @@
                     <th>Phone</th>
                     <th>Occupation</th>
                     <th>Address</th>
+                    <th>Passport No.</abbr></th>
+                    <th>DL No.</th>
+                    <th>Vehicle Owner</th> 
+                    <th>Biz License No.</th>
+                    <th>Plate</th>
                     <th>Photo</th>
-                    <th>Operation</th>
+                    <th>Operation</th>        
                 </tr>
             </thead>
             <tbody id="clientsBody">
@@ -41,7 +46,7 @@
                 console.log('status is '+data.success);
                 if (data.success && Array.isArray(data.clients)) {
                     data.clients.forEach(client => {
-                        console.log('我来了');
+                        // console.log('我来了');
                         clientsBody.innerHTML += `
                             <tr>
                                 <td>${client.id}</td>
@@ -49,20 +54,25 @@
                                 <td>${client.phone}</td>
                                 <td>${client.occupation}</td>
                                 <td>${client.address}</td>
+                                <td>${client.passport_number || ''}</td>
+                                <td>${client.driver_license_number || ''}</td>
+                                <td>${client.owner_of_vehicle_number || ''}</td>
+                                <td>${client.business_license_number || ''}</td>
+                                <td>${client.vehicle_number_plate || ''}</td>
                                 <td>${client.photo ? `<img src="${client.photo}" style="width:40px;height:40px;border-radius:50%;">` : ''}</td>
                                 <td>
                                     <a href="edit_customer_info.html?customer_id=${client.id}" class="btn btn-sm btn-warning">Edit</a>
-                                    <a href="loan_calculator.html?customer_id=${client.id}" class="btn btn-sm btn-warning">Loan Calculate</a>
+                                    <a href="loan_calculator.html?customer_id=${client.id}" class="btn btn-sm btn-primary ms-2">New Loan</a>
                                 </td>
                             </tr>
                         `;
                     });
                 } else {
-                    clientsBody.innerHTML = '<tr><td colspan="7" class="text-center">No customer data</td></tr>';
+                    clientsBody.innerHTML = '<tr><td colspan="11" class="text-center">No customer data</td></tr>';
                 }
             })
             .catch(() => {
-                document.getElementById('clientsBody').innerHTML = '<tr><td colspan="7" class="text-center">Failed to load</td></tr>';
+                document.getElementById('clientsBody').innerHTML = '<tr><td colspan="11" class="text-center">Failed to load</td></tr>';
             });
     </script>
 </body>

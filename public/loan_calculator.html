@@ -240,7 +240,7 @@
                     // 保存到 sessionStorage 以便 e_contract 页面读取
                     sessionStorage.setItem('lastLoan', JSON.stringify(Object.assign({}, payload, { loanNumber: savedLoanNumber })));
                     // 跳转到打印页面
-                    // window.location.href = `e_contract.html?loanNumber=${encodeURIComponent(savedLoanNumber)}`;
+                    window.location.href = `e_contract.html?loanNumber=${encodeURIComponent(savedLoanNumber)}`;
                     return;
                 }
                 // 非 ok，也作为后备保存
@@ -251,7 +251,7 @@
 
             // 后端不可用时，使用 sessionStorage 保存并跳转
             sessionStorage.setItem('lastLoan', JSON.stringify(payload));
-            // window.location.href = `e_contract.html?loanNumber=${encodeURIComponent(payload.loanNumber)}`;
+            window.location.href = `e_contract.html?loanNumber=${encodeURIComponent(payload.loanNumber)}`;
         });
     </script>
 </body>
