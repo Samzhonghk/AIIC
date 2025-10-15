@@ -62,16 +62,17 @@
 
         function renderLoan(loan) {
             if (!loan) return;
+            console.log('Rendering loan:', loan);
             document.getElementById('ec_loanNumber').textContent = loan.loanNumber || loan.loan_number || '';
             document.getElementById('ec_createdDate').textContent = loan.createdDate || loan.created_date || '';
             document.getElementById('ec_customerName').textContent = loan.customerName || loan.customer_name || '';
             document.getElementById('ec_customerId').textContent = loan.customerId || loan.customer_id || '';
-            document.getElementById('ec_lenderName').textContent = loan.lenderName || '';
+            document.getElementById('ec_lenderName').textContent = loan.lender_name || '';
             document.getElementById('ec_loanAmount').textContent = (loan.loanAmount || loan.loan_amount || 0).toFixed(2);
-            document.getElementById('ec_interestRate').textContent = ((loan.interestRate || 0) * 100).toFixed(0) + '%';
-            document.getElementById('ec_interestAmount').textContent = (loan.interestAmount || 0).toFixed(2);
-            document.getElementById('ec_paymentAmount').textContent = (loan.paymentAmount || 0).toFixed(2);
-            document.getElementById('ec_paymentFrequency').textContent = (loan.paymentFrequency == 2) ? 'Fornightly' : 'Weekly';
+            document.getElementById('ec_interestRate').textContent = ((loan.interest_rate || 0) * 100).toFixed(0) + '%';
+            document.getElementById('ec_interestAmount').textContent = (loan.interest_amount || 0).toFixed(2);
+            document.getElementById('ec_paymentAmount').textContent = (loan.payment_amount || 0).toFixed(2);
+            document.getElementById('ec_paymentFrequency').textContent = (loan.payment_frequency == 2) ? 'Fornightly' : 'Weekly';
             document.getElementById('ec_paymentDueDate').textContent = loan.paymentDueDate || loan.payment_due_date || '';
         }
 

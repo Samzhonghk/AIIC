@@ -14,12 +14,17 @@ const db = new sqlite3.Database('./db.sqlite', (err) => {
 
 // 创建用户表，增加 photo 字段
 const createTableSql = `CREATE TABLE IF NOT EXISTS clients (
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
     phone TEXT,
     occupation TEXT,
     address TEXT,
-    photo TEXT
+    photo TEXT,
+    passport_number TEXT,
+    driver_license_number TEXT,
+    owner_of_vehicle_number TEXT,
+    business_license_number TEXT,
+    vehicle_number_plate TEXT
 )`;
 db.run(createTableSql,()=>{
     db.get('SELECT COUNT(*) AS count FROM clients', (err, result) => {
@@ -64,11 +69,11 @@ const upload = multer({ storage });
 // 处理新建用户
 router.post('/', upload.single('photo'), (req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    const { id, name, phone, occupation, address, passport_number, driver_license_number, owner_of_vehicle_number, business_license_number, vehicle_number_plate } = req.body;
+    const { name, phone, occupation, address, passport_number, driver_license_number, owner_of_vehicle_number, business_license_number, vehicle_number_plate } = req.body;
     const photoPath = req.file ? '/' + req.file.filename : '';
     db.run(
-        'INSERT INTO clients (id, name, phone, occupation, address, photo, passport_number, driver_license_number, owner_of_vehicle_number, business_license_number, vehicle_number_plate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [id, name, phone, occupation, address, photoPath, passport_number, driver_license_number, owner_of_vehicle_number, business_license_number, vehicle_number_plate],
+        'INSERT INTO clients (name, phone, occupation, address, photo, passport_number, driver_license_number, owner_of_vehicle_number, business_license_number, vehicle_number_plate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', // Removed explicit insertion of `id` in the SQL query
+        [name, phone, occupation, address, photoPath, passport_number, driver_license_number, owner_of_vehicle_number, business_license_number, vehicle_number_plate],
         function(err) {
             if (err) return res.json({ success: false, message: '数据库写入失败' });
             res.json({ success: true, message: '用户创建成功', photo: photoPath });
@@ -144,6 +149,17 @@ router.put('/:id', upload.single('photo'), (req, res) => {
     db.run(sql, updateValues, function(err) {
         if (err) return res.json({ success: false, message: 'Failed to update client information' });
         res.json({ success: true, message: 'Client information updated successfully' });
+    });
+});
+
+// Endpoint to get the next available client ID
+router.get('/next-id', (req, res) => {
+    db.get('SELECT MAX(id) AS maxId FROM clients', (err, row) => {
+        if (err) {
+            return res.json({ success: false, message: 'Failed to fetch next client ID' });
+        }
+        const nextId = (row && row.maxId) ? row.maxId + 1 : 1;
+        res.json({ success: true, nextId });
     });
 });
 

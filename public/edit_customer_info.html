@@ -77,21 +77,25 @@
             fetch(`/api/clients/${clientId}`)
                 .then(res => res.json())
                 .then(data => {
-                    console.log('here address is :'+data.client.address);
-                    if (data.success && data.client) {
-                        if (!data.client.passportNumber || !data.client.driverLicenseNumber || !data.client.ownerOfVehicleNumber || !data.client.businessLicenseNumber || !data.client.vehicleNumberPlate) {
+                    console.log('Fetched client data:', data);
+                    console.log('data.client:', data.client);
+                    if (data.success || data.client) {
+                        console.log("Client data passportNumber fetched: ", data.client.passport_number);
+                        if (!data.client.passport_number || !data.client.driver_license_number || !data.client.owner_of_vehicle_number || !data.client.business_license_number || !data.client.vehicle_number_plate) {
                             document.getElementById('clientPassportNumber').value = '';
                             document.getElementById('clientDriverLicenseNumber').value = '';
                             document.getElementById('clientOwnerOfVehicleNumber').value = '';
                             document.getElementById('clientBusinessLicenseNumber').value = '';
                             document.getElementById('clientVehicleNumberPlate').value = '';
                         } else {
-                            document.getElementById('clientPassportNumber').value = data.client.passportNumber;
-                            document.getElementById('clientDriverLicenseNumber').value = data.client.driverLicenseNumber;
-                            document.getElementById('clientOwnerOfVehicleNumber').value = data.client.ownerOfVehicleNumber;
-                            document.getElementById('clientBusinessLicenseNumber').value = data.client.businessLicenseNumber;
-                            document.getElementById('clientVehicleNumberPlate').value = data.client.vehicleNumberPlate;
+                            document.getElementById('clientPassportNumber').value = data.client.passport_number;
+                            document.getElementById('clientDriverLicenseNumber').value = data.client.driver_license_number;
+                            document.getElementById('clientOwnerOfVehicleNumber').value = data.client.owner_of_vehicle_number;
+                            document.getElementById('clientBusinessLicenseNumber').value = data.client.business_license_number;
+                            document.getElementById('clientVehicleNumberPlate').value = data.client.vehicle_number_plate;
                         }
+
+                        
                         document.getElementById('clientId').value = data.client.id;
                         document.getElementById('clientName').value = data.client.name;
                         document.getElementById('clientPhone').value = data.client.phone;
@@ -135,14 +139,14 @@
             .then(res => res.json())
             .then(result => {
                 if (result.success) {
-                    alert('客户信息修改成功！');
+                    alert('Client info updated successfully!');
                     window.location.href = 'dashboard.html';
                 } else {
-                    alert(result.message || '修改失败');
+                    alert(result.message || 'Update failed');
                 }
             })
             .catch(() => {
-                alert('网络错误');
+                alert('Network error');
             });
         });
     </script>

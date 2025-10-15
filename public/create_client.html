@@ -92,10 +92,6 @@
                         <input type="file" class="form-control mt-2" id="clientPhoto" accept="image/*">
                     </div>
                     <div class="mb-3">
-                        <label for="clientId" class="form-label">Client ID</label>
-                        <input type="text" class="form-control" id="clientId" readonly>
-                    </div>
-                    <div class="mb-3">
                         <label for="clientName" class="form-label">Name <span style="color: red;">*</span></label>
                         <input type="text" class="form-control" id="clientName" required>
                     </div>
@@ -141,11 +137,6 @@
         </div>
     </div>
     <script>
-        // Auto-generate client ID (demo: random 6-digit number)
-        function generateClientId() {
-            return Math.floor(100000 + Math.random() * 900000);
-        }
-        document.getElementById('clientId').value = generateClientId();
         // Photo preview
         document.getElementById('clientPhoto').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -161,7 +152,6 @@
         document.getElementById('clientForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData();
-            formData.append('id', document.getElementById('clientId').value);
             formData.append('name', document.getElementById('clientName').value);
             formData.append('phone', document.getElementById('clientPhone').value);
             formData.append('occupation', document.getElementById('clientOccupation').value);
