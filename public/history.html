@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>历史记录搜索 - 小额贷款系统</title>
+    <title>History search - small loan system</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root {
@@ -76,13 +76,13 @@
             <thead>
                 <tr>
                     <th>Client Number</th>
+                    <th>Loan Number</th>
                     <th>Name</th>
-                    <th>Phone No.</th>
-                    <th>Record No.</th>
-                    <th>Operation Type</th>
-                    <th>Amount</th>
-                    <th>Time</th>
-                    <th>Remark</th>
+                    <th>Loan Amount</th>
+                    <th>Interest Amount</th>
+                    <th>Created Date</th>
+                    <th>Payment Due Date</th>
+                    <th>Lender Name</th>
                     <th>Operation</th>
                 </tr>
             </thead>
@@ -100,11 +100,11 @@
 
         const mockRecords = {
             1001: [
-                {record_id: 1, type: 'loan', amount: 1000, time: '2022-10-01', remark: 'first time loan'},
-                {record_id: 2, type: 'Repayment', amount: 200, time: '2022-10-05', remark: 'partially refund'}
+                {record_id: 1, loan_number: 'LN001', loan_amount: 1000, interest_amount: 100, created_date: '2022-10-01', payment_due_date: '2022-11-01', lender_name: 'Lender A'},
+                {record_id: 2, loan_number: 'LN002', loan_amount: 200, interest_amount: 20, created_date: '2022-10-05', payment_due_date: '2022-10-20', lender_name: 'Lender B'}
             ],
             1002: [
-                {record_id: 1, type: 'loan', amount: 2000, time: '2022-09-20', remark: 'big loan'}
+                {record_id: 1, loan_number: 'LN003', loan_amount: 2000, interest_amount: 200, created_date: '2022-09-20', payment_due_date: '2022-10-20', lender_name: 'Lender C'}
             ]
         };
 
@@ -132,66 +132,77 @@
                 return;
             }
             records.slice(0, 10).forEach(r => {
+                console.log('loan number:', r.loan_number); // 查看传递的记录数据
                 recordsBody.innerHTML += `
                     <tr>
                         <td>${customer.id}</td>
+                        <td>${r.loan_number}</td>
                         <td>${customer.name}</td>
-                        <td>${customer.phone}</td>
-                        <td>${r.record_id}</td>
-                        <td>${r.type}</td>
-                        <td>${r.amount}</td>
-                        <td>${r.time}</td>
-                        <td>${r.remark}</td>
+                        <td>${r.loan_amount}</td>
+                        <td>${r.interest_amount}</td>
+                        <td>${r.created_date}</td>
+                        <td>${r.payment_due_date}</td>
+                        <td>${r.lender_name}</td>
                         <td><a href="edit_customer_info.html?record_id=${r.record_id}&customer_id=${customer.id}" class="btn btn-sm btn-primary">Details</a></td>
                     </tr>
                 `;
             });
         }
-        document.getElementById('searchForm').addEventListener('submit', function(e) {
+        // Single unified submit handler with proper error handling and debug logs
+        document.getElementById('searchForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const keyword = document.getElementById('searchInput').value.trim();
-            // 请求后端客户信息
-            fetch(`/api/clients/${keyword}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success && data.client) {
-                        renderCustomerInfo(data.client);
-                        // 请求客户贷款记录
-                        fetch(`/api/records/${data.client.id}`)
-                            .then(res => res.json())
-                            .then(recordData => {
-                                if (recordData.success && Array.isArray(recordData.records)) {
-                                    renderRecords(recordData.records, data.client);
-                                } else {
-                                    renderRecords([], data.client);
-                                }
-                            })
-                            .catch(() => {
-                                renderRecords([], data.client);
-                            });
-                    } else {
-                        renderCustomerInfo(null);
-                        renderRecords([], {});
-                    }
-                })
-                .catch(() => {
-                    renderCustomerInfo(null);
-                    renderRecords([], {});
-                });
-        });
+            if (!keyword) return;
 
-        document.getElementById('searchForm').addEventListener('submit', function(e){
-            e.preventDefault();
-            const keyword = document.getElementById('searchInput').value.trim();
-            mockCustomers.forEach(c=>c.id == keyword && c.name === keyword && c.phone === keyword);
-            renderCustomerInfo(customer);
+            // Try backend first
+            try {
+                console.log('Fetching client info for:', keyword);
+                const res = await fetch(`/api/clients/${keyword}`);
+                if (!res.ok) {
+                    console.warn('Client fetch returned', res.status);
+                    // fallback to mock
+                    throw new Error('Client fetch failed');
+                }
+                const data = await res.json();
+                if (data.success && data.client) {
+                    renderCustomerInfo(data.client);
+                    console.log('Client found:', data.client);
+
+                    // fetch records
+                    try {
+                        const rres = await fetch(`/api/records/${data.client.id}`);
+                        if (!rres.ok) {
+                            console.warn('Records fetch returned', rres.status);
+                            renderRecords([], data.client);
+                        } else {
+                            const recordData = await rres.json();
+                            if (recordData.success && Array.isArray(recordData.records)) {
+                                renderRecords(recordData.records, data.client);
+                            } else {
+                                renderRecords([], data.client);
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error fetching records:', err);
+                        renderRecords([], data.client);
+                    }
+                    return;
+                }
+            } catch (err) {
+                console.log('Backend client lookup failed, falling back to mock data');
+            }
+
+            // Mock fallback
+            const parsed = parseInt(keyword, 10);
+            const customer = mockCustomers.find(c => c.id === parsed);
             if (customer) {
+                renderCustomerInfo(customer);
                 renderRecords(mockRecords[customer.id] || [], customer);
             } else {
+                renderCustomerInfo(null);
                 renderRecords([], {});
             }
-        
-        })
+        });
     </script>
 </body>
 </html>

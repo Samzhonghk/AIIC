@@ -38,4 +38,26 @@ router.get('/', (req, res) => {
     );
 });
 
+// Endpoint to fetch loan records for a specific client ID
+// router.get('/api/records/:id', async (req, res) => {
+//     const clientId = req.params.id;
+
+//     try {
+//         // 查询数据库中的记录
+//         const records = await db.all(
+//             'SELECT loan_number, loan_amount, interest_amount, created_date, payment_due_date, lender_name FROM loans WHERE client_id = ?',
+//             [clientId]
+//         );
+
+//         if (records.length === 0) {
+//             return res.status(404).json({ success: false, message: 'No records found for this client ID' });
+//         }
+
+//         res.json({ success: true, records });
+//     } catch (error) {
+//         console.error('Error fetching records:', error);
+//         res.status(500).json({ success: false, message: 'Internal server error' });
+//     }
+// });
+
 module.exports = router;

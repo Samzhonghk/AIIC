@@ -27,43 +27,72 @@
                         <input type="text" class="form-control" id="customerId" name="customerId" required>
                     </div>
                     <div class="mb-3">
-                        <label for="signaturePhoto" class="form-label">Upload Signed Contract</label>
-                        <input type="file" class="form-control" id="signaturePhoto" name="signaturePhoto" accept="image/*" required>
+                        <label for="signedPhoto" class="form-label">Upload Signed Contract</label>
+                        <input type="file" class="form-control" id="signedPhoto" name="signedPhoto" accept="image/*" required>
                     </div>
                     <button type="submit" class="btn btn-primary">Upload</button>
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='dashboard.html'">Cancel</button>
                 </form>
             </div>
         </div>
     </div>
     <script>
-        document.getElementById('uploadSignatureForm').addEventListener('submit', function(e){
+        document.getElementById('uploadSignatureForm').addEventListener('submit', async function(e){
             e.preventDefault();
-            const form = new FormData();
-            const loanNumber = document.getElementById('loanNumber').value;
-            const customerId = document.getElementById('customerId').value;
-            const signaturePhoto = document.getElementById('signaturePhoto').files[0];
-            console.log(loanNumber);
-            console.log(customerId);
-            console.log(signaturePhoto);
-            form.append('loanNumber', loanNumber);
-            form.append('customerId', customerId);
-            form.append('signaturePhoto', signaturePhoto);
-            fetch('/api/loans/upload_signature', {
-                method: 'POST',
-                body: form
-            })
-            .then(res=>res.json())
-            .then(data=>{
-                if(data.success){
-                    alert('Signature uploaded successfully!');
-                }else{
-                    alert('failed to upload signature');
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            const msg = (text) => { console.log(text); };
+
+            try {
+                const form = new FormData();
+                const loanNumber = document.getElementById('loanNumber').value.trim();
+                const customerId = document.getElementById('customerId').value.trim();
+                const signedPhoto = document.getElementById('signedPhoto').files[0];
+
+                if (!loanNumber || !customerId) {
+                    alert('Please enter loan number and customer id');
+                    return;
                 }
-            })
-            .catch(err=>{
+                if (!signedPhoto) {
+                    alert('Please select a file to upload');
+                    return;
+                }
+
+                form.append('loanNumber', loanNumber);
+                form.append('customerId', customerId);
+                // IMPORTANT: backend expects field name 'signedPhoto'
+                form.append('signedPhoto', signedPhoto);
+
+                msg('Uploading...');
+                const res = await fetch('/api/upload-signed-photo', { method: 'POST', body: form });
+
+                // If fetch itself failed (network), this catch will trigger; otherwise we can inspect res
+                if (!res.ok) {
+                    // try to read json body for message, otherwise show status
+                    let body = null;
+                    try { body = await res.json(); } catch (e) { /* ignore */ }
+                    console.error('Upload failed, status=', res.status, 'body=', body);
+                    alert(body && body.message ? `Upload failed: ${body.message}` : `Upload failed (status ${res.status})`);
+                    return;
+                }
+
+                const data = await res.json().catch(() => ({}));
+                if (data.success) {
+                    alert('Signature uploaded successfully!');
+                    if (data.redirectUrl) {
+                        window.location.href = data.redirectUrl;
+                    }
+                } else {
+                    console.error('Upload response:', data);
+                    alert(data.message || 'failed to upload signature');
+                }
+            } catch (err) {
+                // network or unexpected error
                 console.error('Error uploading signature:', err);
-                alert('network Error while uploading signature');
-            });
+                alert('Network error while uploading signature: ' + (err.message || err));
+            } finally {
+                submitBtn.disabled = false;
+            }
         });
             
         
