@@ -24,10 +24,49 @@
 
             <hr>
             <p><strong>Loan Amount:</strong> $<span id="ec_loanAmount"></span></p>
-            <p><strong>Interest Rate:</strong> <span id="ec_interestRate"></span></p>
             <p><strong>Interest Amount:</strong> $<span id="ec_interestAmount"></span></p>
             <p><strong>Payment Amount:</strong> $<span id="ec_paymentAmount"></span> (<span id="ec_paymentFrequency"></span>)</p>
             <p><strong>Payment Due Date:</strong> <span id="ec_paymentDueDate"></span></p>
+
+            <!-- Added Loan Amount and Terms section -->
+            <div class="loan-terms">
+                <h3>1. Loan Amount and Terms</h3>
+                <p>The Lender agrees to loan the Borrower the principal sum of $<span id="ec_loanAmountDynamic"></span>. The Borrower agrees to repay the principal sum, together with a fixed interest rate of $<span id="ec_interestAmountDynamic"></span> per small cash loan, in accordance with the terms of this Agreement.</p>
+            </div>
+
+            <div class="Prepayment">
+                <h3>2. Prepayment </h3>
+                <p>The Borrower may prepay the principal amount, in whole or in part, at any time without penalty. Any prepayment shall first be applied to accrued interest and then to the principal balance. </p>
+            </div>
+
+            <div class="late-payment">
+                <h3>3. Late Payments </h3>
+                <p>If any instalment under this Agreement is not paid when due, the Borrower shall pay a late fee of $25.00. </p>
+            </div>
+
+            <div class="default">
+                <h3>4. Default </h3>
+                <p>In the event of default, the Lender may declare the entire unpaid principal balance and accrued interest immediately due and payable. Events of major default resulting in repossession, including a $350 penalty fee paid directly to the police for release of funds. All security is to be picked up from the local Police Station, once the overdue balance is paid in full by the borrower, but is not limited to:  </p>
+                <ul>
+                    <li>Failure to make any payment when due is considered a default. Three consecutive defaults result in automatic repossession and seizure of the security.   </li>
+                    <li>Filing for bankruptcy by the Borrower.</li>
+                </ul>
+            </div>
+
+            <div class="governing-law">
+                <h3>5. Governing Law </h3>
+                <p>This Agreement shall be governed by and construed in accordance with the governing laws of Samoa.  </p>
+            </div>
+
+            <div class="entire-agreement">
+                <h3>6. Entire Agreement </h3>
+                <p>This Agreement constitutes the entire agreement between the parties and supersedes any prior understandings or agreements, whether written or oral.  </p>
+            </div>
+
+            <div class="amendments">
+                <h3>7. Amendments </h3>
+                <p>Any amendments or modifications to this Agreement must be in writing and signed by both parties. </p>
+            </div>
 
             <hr>
             <p>By signing this contract, the borrower agrees to repay the loan in accordance with the terms above.</p>
@@ -35,11 +74,25 @@
             <div style="height: 80px;"></div>
             <p>__________________________</p>
             <p>Borrower Signature</p>
+
+            <!-- Added a note at the bottom of the page -->
+            <div class="note" style="margin-top: 20px; font-size: 0.9em; color: #555;">
+                <strong>Note:</strong> This loan agreement is used as a professional, legally binding document between the two parties involved. Always consult a lawyer for legal advice.
+            </div>
         </div>
+
+        
 
         <div class="actions no-print">
             <button class="btn btn-primary" id="printBtn">Print / Save PDF</button>
             <a href="loan_calculator.html" class="btn btn-secondary">Back</a>
+            <form action="/api/upload-signed-photo" method="POST" enctype="multipart/form-data" style="margin-top: 16px;">
+                <label for="signedPhoto" class="form-label">Upload Signed Photo:</label>
+                <input type="file" name="signedPhoto" id="signedPhoto" class="form-control" required>
+                <input type="hidden" name="loanNumber" id="hiddenLoanNumber">
+                <input type="hidden" name="customerId" id="hiddenCustomerId">
+                <button type="submit" class="btn btn-success mt-2">Upload</button>
+            </form>
         </div>
     </div>
 
@@ -69,7 +122,6 @@
             document.getElementById('ec_customerId').textContent = loan.customerId || loan.customer_id || '';
             document.getElementById('ec_lenderName').textContent = loan.lender_name || '';
             document.getElementById('ec_loanAmount').textContent = (loan.loanAmount || loan.loan_amount || 0).toFixed(2);
-            document.getElementById('ec_interestRate').textContent = ((loan.interest_rate || 0) * 100).toFixed(0) + '%';
             document.getElementById('ec_interestAmount').textContent = (loan.interest_amount || 0).toFixed(2);
             document.getElementById('ec_paymentAmount').textContent = (loan.payment_amount || 0).toFixed(2);
             document.getElementById('ec_paymentFrequency').textContent = (loan.payment_frequency == 2) ? 'Fornightly' : 'Weekly';
@@ -98,10 +150,60 @@
 
             renderLoan(loan);
 
+            // Populate hidden fields after rendering loan details
+            const renderedLoanNumber = document.getElementById('ec_loanNumber').textContent;
+            const renderedCustomerId = document.getElementById('ec_customerId').textContent;
+            console.log('Setting hidden fieldsabc:', renderedLoanNumber, renderedCustomerId);
+
+            document.getElementById('hiddenLoanNumber').value = renderedLoanNumber;
+            document.getElementById('hiddenCustomerId').value = renderedCustomerId;
+
             document.getElementById('printBtn').addEventListener('click', function() {
                 window.print();
             });
         })();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const loanNumber = document.getElementById('ec_loanNumber').textContent;
+            const customerId = document.getElementById('ec_customerId').textContent;
+            console.log('Setting hidden fields:', loanNumber);
+
+            document.getElementById('hiddenLoanNumber').value = loanNumber;
+            document.getElementById('hiddenCustomerId').value = customerId;
+        });
+
+        document.querySelector('form').addEventListener('submit', async function (event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const formData = new FormData(this);
+            try {
+                const response = await fetch(this.action, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(result.message); // Show success message
+                    window.location.href = result.redirectUrl; // Redirect to the new page
+                } else {
+                    alert(`Error: ${result.message}`); // Show error message
+                }
+            } catch (error) {
+                console.error('Upload failed:', error);
+                alert('An unexpected error occurred. Please try again.');
+            }
+        });
+
+        // Dynamically populate Loan Amount and Interest Amount
+        document.addEventListener('DOMContentLoaded', () => {
+            const loanAmount = document.getElementById('ec_loanAmount').textContent;
+            const interestAmount = document.getElementById('ec_interestAmount').textContent;
+
+            document.getElementById('ec_loanAmountDynamic').textContent = loanAmount;
+            document.getElementById('ec_interestAmountDynamic').textContent = interestAmount;
+        });
     </script>
 </body>
 </html>

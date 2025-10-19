@@ -33,10 +33,6 @@
                 <h4 class="card-title mb-3">Create New Loan</h4>
                 <form id="loanForm">
                     <div class="mb-3">
-                        <label class="form-label">Loan Number</label>
-                        <input type="text" class="form-control" id="loanNumber" readonly>
-                    </div>
-                    <div class="mb-3">
                         <label class="form-label">Created Date</label>
                         <input type="text" class="form-control" id="createdDate" readonly>
                     </div>
@@ -102,14 +98,15 @@
             }
         }
         // 自动生成 Loan Number（实际应从数据库获取最大值+1）
-        let loanNumberSeed = 1;
-        function padLoanNumber(num) {
-            return num.toString().padStart(6, '0');
-        }
-        function getNextLoanNumber() {
-            // 实际应从后端获取最大 loan number
-            return padLoanNumber(loanNumberSeed++);
-        }
+        // let loanNumberSeed = 1;
+        // function padLoanNumber(num) {
+        //     return num.toString().padStart(6, '0');
+        // }
+        // function getNextLoanNumber() {
+        //     // 实际应从后端获取最大 loan number
+        //     return padLoanNumber(loanNumberSeed++);
+        // }
+
         // 设置客户信息（异步获取）
         const customerId = getQueryParam('customerNumber') || getQueryParam('customer_id') || '';
         async function setCustomerInfo() {
@@ -124,7 +121,7 @@
         }
         setCustomerInfo();
         // 设置 Loan Number 和 Created Date
-        document.getElementById('loanNumber').value = getNextLoanNumber();
+        // document.getElementById('loanNumber').value = getNextLoanNumber();
         // 新西兰时间（奥克兰）
         function getNZDateString() {
             const now = new Date();
@@ -200,8 +197,6 @@
                 paymentAmountInput.min = 100;
                 paymentAmountInput.value = 100;
             } else if (freq === 2) {
-                // paymentAmountInput.min = 200;
-                // paymentAmountInput.value = 200;
                 paymentAmountInput.min = 200;
                 paymentAmountInput.value = 200;
             }
@@ -214,7 +209,6 @@
         document.getElementById('loanForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const payload = {
-                loanNumber: document.getElementById('loanNumber').value,
                 createdDate: document.getElementById('createdDate').value,
                 loanAmount: parseFloat(document.getElementById('loanAmount').value) || 0,
                 interestRate: parseFloat(document.getElementById('interestSelect').value) || 0,
@@ -235,23 +229,14 @@
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    // 假设后端返回 { success: true, loanNumber: '000123' }
-                    const savedLoanNumber = data && data.loanNumber ? data.loanNumber : payload.loanNumber;
-                    // 保存到 sessionStorage 以便 e_contract 页面读取
-                    sessionStorage.setItem('lastLoan', JSON.stringify(Object.assign({}, payload, { loanNumber: savedLoanNumber })));
-                    // 跳转到打印页面
-                    window.location.href = `e_contract.html?loanNumber=${encodeURIComponent(savedLoanNumber)}`;
-                    return;
+                    const loanNumber = data.loanNumber;
+                    window.location.href = `e_contract.html?loanNumber=${encodeURIComponent(loanNumber)}`;
+                } else {
+                    alert('Failed to create loan');
                 }
-                // 非 ok，也作为后备保存
             } catch (err) {
-                // 网络或 CORS 错误
-                console.warn('POST /api/loans failed, falling back to sessionStorage', err);
+                console.error('Error creating loan:', err);
             }
-
-            // 后端不可用时，使用 sessionStorage 保存并跳转
-            sessionStorage.setItem('lastLoan', JSON.stringify(payload));
-            window.location.href = `e_contract.html?loanNumber=${encodeURIComponent(payload.loanNumber)}`;
         });
     </script>
 </body>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Information</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f8f9fa; color: #212529; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .container { max-width: 800px; margin: 24px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .photo { max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; margin-top: 16px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-center">Customer Information</h2>
+        <p><strong>Loan Number:</strong> <span id="loanNumber"></span></p>
+        <p><strong>Customer ID:</strong> <span id="customerId"></span></p>
+        <p><strong>Customer Name:</strong> <span id="customerName"></span></p>
+        <p><strong>Signed Photo:</strong></p>
+        <img id="signedPhoto" class="photo" alt="Signed Photo">
+        <a href="dashboard.html" class="btn btn-secondary mt-3">Confirm Customer information</a>
+    </div>
+
+    <script>
+        function getQueryParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        async function fetchCustomerInfo(loanNumber, customerId) {
+            try {
+                const response = await fetch(`/api/customer-info?loanNumber=${encodeURIComponent(loanNumber)}&customerId=${encodeURIComponent(customerId)}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch customer information');
+                }
+                return await response.json();
+            } catch (error) {
+                console.error(error);
+                alert('Failed to load customer information.');
+            }
+        }
+
+        (async function() {
+            const loanNumber = getQueryParam('loanNumber');
+            const customerId = getQueryParam('customerId');
+
+            if (!loanNumber || !customerId) {
+                alert('Missing loan number or customer ID in the URL.');
+                return;
+            }
+
+            const customerInfo = await fetchCustomerInfo(loanNumber, customerId);
+
+            if (customerInfo) {
+                document.getElementById('loanNumber').textContent = customerInfo.loanNumber || '';
+                document.getElementById('customerId').textContent = customerInfo.customerId || '';
+                document.getElementById('customerName').textContent = customerInfo.customerName || '';
+                document.getElementById('signedPhoto').src = customerInfo.signedPhoto || '';
+            }
+        })();
+    </script>
+</body>
+</html>
