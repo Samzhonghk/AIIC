@@ -8,6 +8,7 @@ const loansRouter = require('./api/loans');
 const uploadSignedPhotoRoutes = require('./api/upload-signed-photo');
 const customerInfoRoutes = require('./api/customer-info');
 const recordsRouter = require('./api/records');
+const repayRecordsRouter = require('./api/repay-records');
 
 const app = express();
 app.use(cors());
@@ -23,6 +24,7 @@ app.use('/api/loans', loansRouter);
 app.use('/api/upload-signed-photo', uploadSignedPhotoRoutes);
 app.use('/api/customer-info', customerInfoRoutes);
 app.use('/api/records', recordsRouter);
+app.use('/api/repay-records', repayRecordsRouter);
 
 // 其他路由可继续分离
 // const loansRouter = require('./routes/loans');
