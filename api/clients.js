@@ -84,7 +84,7 @@ router.post('/', upload.single('photo'), (req, res) => {
 // 获取所有客户列表
 router.get('/all', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    db.all('SELECT * FROM clients', (err, rows) => {
+    db.all('SELECT * FROM clients ORDER BY id DESC', (err, rows) => {
         if (err) return res.json({ success: false, message: '数据库查询失败' });
         if (!rows || rows.length === 0) {
             return res.json({ success: true, clients: [], message: '没有客户数据' });

@@ -59,37 +59,20 @@
             </div>
             <button type="submit" class="btn btn-primary w-100">Search</button>
             <div class="text-center mt-3">
-                <button id="cancelButton" class="btn btn-primary w-100">Cancel</button>
+                <!-- make this a non-submit button so it doesn't trigger the form's submit handler -->
+                <button id="cancelButton" type="button" class="btn btn-secondary w-100">Cancel</button>
             </div>
         </form>
-        <div id="repayResults" class="results mt-3"></div>
+        <!-- <div id="repayResults" class="results mt-3"></div> -->
     </div>
     <script>
-        // 处理搜索表单提交
-        document.getElementById("repaySearchForm").addEventListener('submit', async function(e){
+        // 处理搜索表单提交 — 跳转到 repay_schedule.html 显示完整计划
+        document.getElementById("repaySearchForm").addEventListener('submit', function(e){
             e.preventDefault();
             const clientNumber = document.getElementById('clientNumber').value.trim();
-            const resultDiv = document.getElementById('repayResults');
-
-            
-
-            try{
-                const response = await fetch('/api/repay-records/?clientNumber=' + encodeURIComponent(clientNumber));
-                if(!response.ok){
-                    throw new Error('Failed to fetch repay loan records' + Error.message);
-                }
-
-                const res = await response.json();
-                if (res.length>0) {
-                    resultDiv.innerHTML = `<ul class="list-group">${res.map(record => `<li class="list-group-item">Amount: ${record.amount}, Due Date: ${record.dueDate}</li>`).join('')}</ul>`;
-                } else {
-                    resultDiv.innerHTML = `<p class="error">No repay records found for Client Number: ${clientNumber}</p>`;
-                }
-            } catch (error) {
-                resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
-            }
-
-        })
+            if(!clientNumber) return;
+            window.location.href = `repay_schedule.html?clientNumber=${encodeURIComponent(clientNumber)}`;
+        });
         // Add event listener for the cancel button
         document.getElementById('cancelButton').addEventListener('click', function () {
             window.location.href = 'dashboard.html'; // Redirect to dashboard.html
