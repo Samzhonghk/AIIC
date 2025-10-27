@@ -51,12 +51,10 @@
       });
       function renderRepayData(data){
         if(!Array.isArray(data) || data.length===0){ document.getElementById('content').innerHTML = '<p class="text-warning">No repay records found.</p>'; return; }
-        // late fee configuration: flat fee once overdue (25 NZD)
-        const LATE_FEE_FLAT = 25.00;
+    // Note: per-row late fee column removed; user will enter a custom late fee below when recording a payment
         const now = Math.floor(Date.now()/1000);
   let rowsHTML = '';
   let totalPaid = 0;
-  let totalLateFee = 0;
   let totalRemainingPrincipal = 0;
         for(const it of data){
           const repayId = it.repay_id || '';
@@ -65,25 +63,18 @@
           const dueDate = Number(it.due_date) || 0;
           const repayAmount = (it.repay_amount!=null? Number(it.repay_amount) : (it.repayAmount!=null? Number(it.repayAmount) : 0)) || 0;
           const paidAmount = it.paid_amount != null ? Number(it.paid_amount) : 0;
-          // calculate late fee: fixed fee charged once when overdue and not fully paid
-          let lateFee = 0;
-          if(dueDate > 0 && now > dueDate && paidAmount < repayAmount){
-            lateFee = LATE_FEE_FLAT;
-          }
           totalPaid += paidAmount;
-          // prefer stored late_fee if present in data, otherwise use computed suggestion
-          const storedLate = (it.late_fee != null) ? Number(it.late_fee) : lateFee;
-          totalLateFee += storedLate;
+          // note: stored late fee (it.late_fee) may exist but UI no longer shows per-row late fee
           // remaining principal for this row
           const remainingThis = Math.max(repayAmount - paidAmount, 0);
           totalRemainingPrincipal += remainingThis;
-
-          const lateFeeDisabled = (lateFee <= 0);
+          // already-paid late fee for this repay row (backend may return aggregated value as `late_fee`)
+          const paidLateFee = it.late_fee != null ? Number(it.late_fee) : 0;
           // determine if this row should be selectable: disable if already fully paid
           const isPaid = (it.status === 'paid') || (paidAmount >= repayAmount && repayAmount > 0);
           const radioDisabledAttr = isPaid ? 'disabled' : '';
           const rowClass = isPaid ? 'table-secondary text-muted' : '';
-          rowsHTML += `<tr class="${rowClass}" data-repay-id="${repayId}" data-loan-id="${loanId}" data-client-id="${it.client_id || ''}" data-due-date="${dueDate}" data-repay-amount="${repayAmount.toFixed(2)}">
+          rowsHTML += `<tr class="${rowClass}" data-repay-id="${repayId}" data-loan-id="${loanId}" data-client-id="${it.client_id || ''}" data-due-date="${dueDate}" data-repay-amount="${repayAmount.toFixed(2)}" data-late-fee="${paidLateFee.toFixed(2)}">
             <td><input type="radio" name="selectedRepay" value="${repayId}" ${radioDisabledAttr}></td>
             <td>${repayId}</td>
             <td>${loanId}</td>
@@ -91,36 +82,28 @@
             <td>${dueDate? new Date(dueDate*1000).toLocaleDateString() : ''}</td>
             <td>${repayAmount.toFixed(2)}</td>
             <td>${paidAmount.toFixed(2)}</td>
+            <td>${paidLateFee.toFixed(2)}</td>
             <td>${it.status || ''}</td>
-            <td>
-              <div class="d-flex align-items-center">
-                <input type="number" step="0.01" class="form-control form-control-sm lateFeeInput" value="${lateFee.toFixed(2)}" style="width:100px;" ${lateFeeDisabled || isPaid? 'disabled' : ''}>
-                <div class="form-check form-check-inline ms-2">
-                  <input class="form-check-input lateFeeOverride" type="checkbox" ${lateFeeDisabled || isPaid? '' : 'checked'} title="Check to edit late fee" ${isPaid? 'disabled' : ''}>
-                </div>
-              </div>
-            </td>
           </tr>`;
         }
 
         document.getElementById('content').innerHTML = `
           <div class="remain-box">
             <div class="remain-amount">Remaining: NZ$${totalRemainingPrincipal.toFixed(2)}</div>
-            <div class="text-muted">Including late fees: NZ$${(totalRemainingPrincipal + totalLateFee).toFixed(2)}</div>
           </div>
           <table class="table table-striped">
-            <thead><tr><th></th><th>Repay ID</th><th>Loan</th><th>Repay Date</th><th>Due Date</th><th>Amount</th><th>Paid</th><th>Status</th><th>Late Fee</th></tr></thead>
+            <thead><tr><th></th><th>Repay ID</th><th>Loan</th><th>Repay Date</th><th>Due Date</th><th>Amount</th><th>Paid</th><th>Late Fee Paid</th><th>Status</th></tr></thead>
             <tbody>${rowsHTML}</tbody>
           </table>
             <div class="mt-2 mb-3">
             <strong>Total Already Paid:</strong> <span id="totalPaid">${totalPaid.toFixed(2)}</span>
-            <span class="ms-4"><strong>Total Late Fee:</strong> <span id="totalLateFee">${totalLateFee.toFixed(2)}</span></span>
-            <span class="ms-4 text-muted">(Late fee: NZ$${LATE_FEE_FLAT.toFixed(2)} per overdue every term)</span>
           </div>
             <div class="mt-3">
             <label for="recordAmount">Repay Amount :</label>
             <input id="recordAmount" class="form-control mb-2" type="number" step="0.01" min="0.01" placeholder="Enter amount to repay">
             <div id="recordMinMsg" class="form-text text-muted mb-2"></div>
+            <label for="recordLateFee" class="form-label mt-2">Late Fee (optional):</label>
+            <input id="recordLateFee" class="form-control mb-2" type="number" step="0.01" min="0" placeholder="Enter late fee amount">
             <label for="recordRemark">Remark (optional):</label>
             <input id="recordRemark" class="form-control mb-2" type="text" placeholder="Remark">
             <button id="recordBtn" class="btn btn-success">Repay</button>
@@ -128,14 +111,7 @@
           </div>
         `;
 
-        // enable override toggles for late fee inputs
-        document.querySelectorAll('.lateFeeOverride').forEach(chk => {
-          chk.addEventListener('change', function(){
-            const tr = this.closest('tr');
-            const input = tr.querySelector('.lateFeeInput');
-            if(input) input.disabled = !this.checked;
-          });
-        });
+        // no per-row late fee overrides; user provides late fee in the payment form below
 
         // when a repayment row is selected, update the recordAmount min and show hint
         function onRepayRowSelected(e){
@@ -170,11 +146,9 @@
           const scheduledMin = parseFloat(recordAmountEl.dataset.scheduledMin || '0') || 0;
           if(scheduledMin > 0 && amount < scheduledMin){ msg.innerHTML = '<span class="text-danger">Amount must be at least NZ$' + scheduledMin.toFixed(2) + '</span>'; return; }
 
-          // check for late fee inputs in the selected row
-          const lateFeeInput = tr.querySelector('.lateFeeInput');
-          const lateFeeOverrideChk = tr.querySelector('.lateFeeOverride');
-          const lateFeeValue = lateFeeInput ? parseFloat(lateFeeInput.value) || 0 : 0;
-          const lateFeeOverride = lateFeeOverrideChk ? Boolean(lateFeeOverrideChk.checked) : false;
+          // read custom late fee from the payment form
+          const lateFeeValue = parseFloat(document.getElementById('recordLateFee').value) || 0;
+          const lateFeeOverride = true; // user-specified late fee should be treated as override
 
           const payload = {
             repay_id: repayId,
@@ -187,6 +161,7 @@
             late_fee_override: lateFeeOverride
           };
           try{
+
             const r = await fetch('/api/repay-records/payments', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
             if(!r.ok){ const text = await r.text(); throw new Error(text || 'Failed'); }
             const j = await r.json();

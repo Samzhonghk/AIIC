@@ -75,8 +75,8 @@ router.post('/', upload.single('photo'), (req, res) => {
         'INSERT INTO clients (name, phone, occupation, address, photo, passport_number, driver_license_number, owner_of_vehicle_number, business_license_number, vehicle_number_plate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', // Removed explicit insertion of `id` in the SQL query
         [name, phone, occupation, address, photoPath, passport_number, driver_license_number, owner_of_vehicle_number, business_license_number, vehicle_number_plate],
         function(err) {
-            if (err) return res.json({ success: false, message: '数据库写入失败' });
-            res.json({ success: true, message: '用户创建成功', photo: photoPath });
+            if (err) return res.json({ success: false, message: 'Database write failed' });
+            res.json({ success: true, message: 'User created successfully', photo: photoPath });
         }
     );
 });
@@ -85,9 +85,9 @@ router.post('/', upload.single('photo'), (req, res) => {
 router.get('/all', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     db.all('SELECT * FROM clients ORDER BY id DESC', (err, rows) => {
-        if (err) return res.json({ success: false, message: '数据库查询失败' });
+        if (err) return res.json({ success: false, message: 'Database search failed' });
         if (!rows || rows.length === 0) {
-            return res.json({ success: true, clients: [], message: '没有客户数据' });
+            return res.json({ success: true, clients: [], message: 'No client data' });
         }
         res.json({ success: true, clients: rows });
     });
@@ -128,16 +128,19 @@ router.put('/:id', upload.single('photo'), (req, res) => {
     const updateFields = [];
     const updateValues = [];
 
-    if (name) { updateFields.push('name = ?'); updateValues.push(name); }
-    if (phone) { updateFields.push('phone = ?'); updateValues.push(phone); }
-    if (occupation) { updateFields.push('occupation = ?'); updateValues.push(occupation); }
-    if (address) { updateFields.push('address = ?'); updateValues.push(address); }
-    if (passport_number) { updateFields.push('passport_number = ?'); updateValues.push(passport_number); }
-    if (driver_license_number) { updateFields.push('driver_license_number = ?'); updateValues.push(driver_license_number); }
-    if (owner_of_vehicle_number) { updateFields.push('owner_of_vehicle_number = ?'); updateValues.push(owner_of_vehicle_number); }
-    if (business_license_number) { updateFields.push('business_license_number = ?'); updateValues.push(business_license_number); }
-    if (vehicle_number_plate) { updateFields.push('vehicle_number_plate = ?'); updateValues.push(vehicle_number_plate); }
-    if (photoPath) { updateFields.push('photo = ?'); updateValues.push(photoPath); }
+    // Use explicit presence checks so empty strings are allowed (user can clear a field)
+    const body = req.body || {};
+    if (Object.prototype.hasOwnProperty.call(body, 'name')) { updateFields.push('name = ?'); updateValues.push(name); }
+    if (Object.prototype.hasOwnProperty.call(body, 'phone')) { updateFields.push('phone = ?'); updateValues.push(phone); }
+    if (Object.prototype.hasOwnProperty.call(body, 'occupation')) { updateFields.push('occupation = ?'); updateValues.push(occupation); }
+    if (Object.prototype.hasOwnProperty.call(body, 'address')) { updateFields.push('address = ?'); updateValues.push(address); }
+    if (Object.prototype.hasOwnProperty.call(body, 'passport_number')) { updateFields.push('passport_number = ?'); updateValues.push(passport_number); }
+    if (Object.prototype.hasOwnProperty.call(body, 'driver_license_number')) { updateFields.push('driver_license_number = ?'); updateValues.push(driver_license_number); }
+    if (Object.prototype.hasOwnProperty.call(body, 'owner_of_vehicle_number')) { updateFields.push('owner_of_vehicle_number = ?'); updateValues.push(owner_of_vehicle_number); }
+    if (Object.prototype.hasOwnProperty.call(body, 'business_license_number')) { updateFields.push('business_license_number = ?'); updateValues.push(business_license_number); }
+    if (Object.prototype.hasOwnProperty.call(body, 'vehicle_number_plate')) { updateFields.push('vehicle_number_plate = ?'); updateValues.push(vehicle_number_plate); }
+    // photoPath is null when no file uploaded; allow clearing photo only if a file provided or if client explicitly sent an empty photo flag (not implemented)
+    if (photoPath !== null) { updateFields.push('photo = ?'); updateValues.push(photoPath); }
 
     if (updateFields.length === 0) {
         return res.json({ success: false, message: 'No fields to update' });

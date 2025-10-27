@@ -71,6 +71,21 @@ db.serialize(() => {
             });
         }
     });
+
+    // Ensure loans table has contract_signed column (used to control visibility of repay schedules)
+    db.all("PRAGMA table_info('loans')", (lErr, lCols) => {
+        if (lErr) {
+            console.warn('Could not read loans table info:', lErr.message);
+            return;
+        }
+        const lNames = (lCols || []).map(c => c.name);
+        if (!lNames.includes('contract_signed')) {
+            db.run("ALTER TABLE loans ADD COLUMN contract_signed INTEGER DEFAULT 0", (aErr) => {
+                if (aErr) console.warn('Failed to add contract_signed to loans (ignored):', aErr.message);
+                else console.log('Migration: added contract_signed column to loans');
+            });
+        }
+    });
 });
 
 // Endpoint to fetch repay records by client number
@@ -86,15 +101,20 @@ router.get('/', (req, res) => {
     if (isNaN(clientId)) {
         return res.status(400).json({ error: 'Client number must be a numeric client id' });
     }
-
-    const query = `
+    // By default only return repay rows whose loan has contract_signed = 1
+    const includeHidden = req.query.include_hidden === 'true';
+    let sql = `
         SELECT r.repay_id, r.loan_id, r.client_id, r.repay_date, r.due_date, r.repay_amount, r.paid_amount, r.late_fee, r.status, r.paid_date, r.payment_method, r.receipt_no, r.remark, r.create_date
         FROM repay r
+        LEFT JOIN loans l ON l.loan_number = r.loan_id
         WHERE r.client_id = ?
-        ORDER BY r.repay_date ASC
     `;
+    if (!includeHidden) {
+        sql += " AND COALESCE(l.contract_signed,0) = 1";
+    }
+    sql += " ORDER BY r.repay_date ASC";
 
-    db.all(query, [clientId], (err, rows) => {
+    db.all(sql, [clientId], (err, rows) => {
         if (err) {
             console.error('Database query error:', err.message);
             return res.status(500).json({ error: 'Internal server error' });
