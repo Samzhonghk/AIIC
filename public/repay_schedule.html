@@ -74,11 +74,13 @@
           const isPaid = (it.status === 'paid') || (paidAmount >= repayAmount && repayAmount > 0);
           const radioDisabledAttr = isPaid ? 'disabled' : '';
           const rowClass = isPaid ? 'table-secondary text-muted' : '';
-          rowsHTML += `<tr class="${rowClass}" data-repay-id="${repayId}" data-loan-id="${loanId}" data-client-id="${it.client_id || ''}" data-due-date="${dueDate}" data-repay-amount="${repayAmount.toFixed(2)}" data-late-fee="${paidLateFee.toFixed(2)}">
+          // show paid_date (the actual date payment was made) only when payment exists
+          const paidDate = Number(it.paid_date) || 0;
+          rowsHTML += `<tr class="${rowClass}" data-repay-id="${repayId}" data-loan-id="${loanId}" data-client-id="${it.client_id || ''}" data-due-date="${dueDate}" data-repay-amount="${repayAmount.toFixed(2)}" data-remaining="${remainingThis.toFixed(2)}" data-late-fee="${paidLateFee.toFixed(2)}">
             <td><input type="radio" name="selectedRepay" value="${repayId}" ${radioDisabledAttr}></td>
             <td>${repayId}</td>
             <td>${loanId}</td>
-            <td>${new Date(repayDate*1000).toLocaleDateString()}</td>
+            <td>${paidDate? new Date(paidDate*1000).toLocaleDateString() : ''}</td>
             <td>${dueDate? new Date(dueDate*1000).toLocaleDateString() : ''}</td>
             <td>${repayAmount.toFixed(2)}</td>
             <td>${paidAmount.toFixed(2)}</td>
@@ -89,7 +91,7 @@
 
         document.getElementById('content').innerHTML = `
           <div class="remain-box">
-            <div class="remain-amount">Remaining: NZ$${totalRemainingPrincipal.toFixed(2)}</div>
+            <div class="remain-amount">Remaining: ${totalRemainingPrincipal.toFixed(2)}</div>
           </div>
           <table class="table table-striped">
             <thead><tr><th></th><th>Repay ID</th><th>Loan</th><th>Repay Date</th><th>Due Date</th><th>Amount</th><th>Paid</th><th>Late Fee Paid</th><th>Status</th></tr></thead>
@@ -118,12 +120,14 @@
           const sel = e.target;
           const tr = sel.closest('tr');
           const scheduled = parseFloat(tr.getAttribute('data-repay-amount')) || 0;
+          const remaining = parseFloat(tr.getAttribute('data-remaining')) || 0;
           const recordAmountEl = document.getElementById('recordAmount');
-          // store the scheduled min in dataset (reliable source for validation)
+          // store the scheduled min in dataset; do NOT set max attribute or remaining dataset to avoid client-side blocking
           recordAmountEl.dataset.scheduledMin = String(scheduled);
           recordAmountEl.min = scheduled.toFixed(2);
           const hint = document.getElementById('recordMinMsg');
-          if(hint) hint.textContent = 'Minimum pay: NZ$' + scheduled.toFixed(2);
+        //   if(hint) hint.textContent = 'At least：NZ$' + scheduled.toFixed(2) + (remaining>0 ? ('，remaining：NZ$' + remaining.toFixed(2)) : '');
+          if(hint) hint.textContent = 'At least：' + scheduled.toFixed(2) ;
         }
         document.querySelectorAll('input[name="selectedRepay"]').forEach(r=> r.addEventListener('change', onRepayRowSelected));
 
@@ -132,7 +136,7 @@
           const sel = document.querySelector('input[name="selectedRepay"]:checked');
           const msg = document.getElementById('recordMsg');
           msg.textContent = '';
-          if(!sel){ msg.innerHTML = '<span class="text-danger">Please select a repayment row first.</span>'; return; }
+          if(!sel){ msg.innerHTML = '<span class="text-danger">Please select a repayment period first.</span>'; return; }
           const repayId = sel.value;
           const tr = sel.closest('tr');
           const loanId = tr.getAttribute('data-loan-id');
@@ -140,11 +144,14 @@
           const dueDate = Number(tr.getAttribute('data-due-date')) || Math.floor(Date.now()/1000);
           const amount = parseFloat(document.getElementById('recordAmount').value);
           const remark = document.getElementById('recordRemark').value || null;
-          if(!amount || amount <= 0){ msg.innerHTML = '<span class="text-danger">Invalid amount</span>'; return; }
+          if(!amount || amount <= 0){ msg.innerHTML = '<span class="text-danger">无效金额</span>'; return; }
           // enforce scheduled minimum (read from recordAmount.dataset which is set when selecting a row)
           const recordAmountEl = document.getElementById('recordAmount');
+          // remove client-side max constraint at submit time so backend will be the final authority
+          try { recordAmountEl.setCustomValidity(''); } catch(e) { /* ignore */ }
+          try { recordAmountEl.removeAttribute('max'); } catch(e) { /* ignore */ }
           const scheduledMin = parseFloat(recordAmountEl.dataset.scheduledMin || '0') || 0;
-          if(scheduledMin > 0 && amount < scheduledMin){ msg.innerHTML = '<span class="text-danger">Amount must be at least NZ$' + scheduledMin.toFixed(2) + '</span>'; return; }
+          if(scheduledMin > 0 && amount < scheduledMin){ msg.innerHTML = '<span class="text-danger">Amount can not be less than ' + scheduledMin.toFixed(2) + '</span>'; return; }
 
           // read custom late fee from the payment form
           const lateFeeValue = parseFloat(document.getElementById('recordLateFee').value) || 0;
@@ -163,12 +170,87 @@
           try{
 
             const r = await fetch('/api/repay-records/payments', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-            if(!r.ok){ const text = await r.text(); throw new Error(text || 'Failed'); }
+            if(!r.ok){
+              let errBody;
+              try { errBody = await r.json(); } catch(e) { errBody = { error: await r.text() }; }
+              const remaining = errBody && (errBody.remaining != null ? errBody.remaining : (errBody.remaining_amount || errBody.remainingAmount || null));
+              const em = errBody && (errBody.error || errBody.message) ? (errBody.error || errBody.message) : JSON.stringify(errBody);
+              if (remaining != null) {
+                msg.innerHTML = '<span class="text-danger">Payment failed: repay amount is more than remaining ' + Number(remaining).toFixed(2) + '</span>';
+                return;
+              }
+              throw new Error(em || 'Failed');
+            }
             const j = await r.json();
-            msg.innerHTML = '<span class="text-success">Recorded payment id: '+ (j.payment_id || j.paymentId || j.payment_id || '') +'</span>';
-            // refresh data by re-fetching repay records
-            const fresh = await fetch('/api/repay-records/?clientNumber=' + encodeURIComponent(clientNumber)).then(r=>r.json());
-            renderRepayData(fresh);
+            // msg.innerHTML = '<span class="text-success">Recorded payment id: '+ (j.payment_id || j.paymentId || '') +'</span>';
+            msg.innerHTML = '<span class="text-success">Repay successfully.</span>';
+            // if server returned updated repay row, update the specific table row to avoid full reload
+            if (j.repay) {
+              const tr = document.querySelector(`tr[data-repay-id="${j.repay.repay_id}"]`);
+              if (tr) {
+                const tds = tr.querySelectorAll('td');
+                // columns: 0=radio,1=repayId,2=loan,3=Repay Date,4=Due Date,5=Amount,6=Paid,7=Late Fee Paid,8=Status
+                tds[3].textContent = j.repay.paid_date ? new Date(j.repay.paid_date*1000).toLocaleDateString() : '';
+                tds[6].textContent = Number(j.repay.paid_amount || 0).toFixed(2);
+                tr.setAttribute('data-remaining', (Number(j.repay.repay_amount || 0) - Number(j.repay.paid_amount || 0)).toFixed(2));
+                tds[7].textContent = Number(j.repay.late_fee || 0).toFixed(2);
+                tds[8].textContent = j.repay.status || '';
+
+                // Update row classes and radio state to reflect paid/unpaid immediately
+                const paidAmountNum = Number(j.repay.paid_amount || 0);
+                const repayAmountNum = Number(j.repay.repay_amount || 0);
+                const lateFeeNum = Number(j.repay.late_fee || 0);
+                const statusNow = j.repay.status || '';
+                const isPaidNow = (statusNow === 'paid') || (repayAmountNum > 0 && paidAmountNum >= repayAmountNum);
+                if (isPaidNow) {
+                  tr.classList.add('table-secondary', 'text-muted');
+                } else {
+                  tr.classList.remove('table-secondary', 'text-muted');
+                }
+                // Update radio disabled state correctly and uncheck it
+                const radio = tr.querySelector('input[name="selectedRepay"]');
+                if (radio) {
+                  radio.disabled = isPaidNow;
+                  radio.checked = false;
+                }
+                // Fix selector: use :not(:disabled) to find next selectable radio
+                const next = document.querySelector('input[name="selectedRepay"]:not(:disabled)');
+                if (next) {
+                  next.checked = true;
+                  next.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+
+                // OPTIONAL: update top-level totals without full reload by recomputing from DOM
+                try {
+                  let totalPaid = 0;
+                  document.querySelectorAll('table tbody tr').forEach(r => {
+                    const paidCell = r.children[6];
+                    if (paidCell) {
+                      const v = parseFloat((paidCell.textContent || '').replace(/[^0-9.-]/g, '')) || 0;
+                      totalPaid += v;
+                    }
+                  });
+                  const totalPaidEl = document.getElementById('totalPaid');
+                  if (totalPaidEl) totalPaidEl.textContent = totalPaid.toFixed(2);
+
+                  let totalRemaining = 0;
+                  document.querySelectorAll('table tbody tr').forEach(r => {
+                    const rem = parseFloat(r.getAttribute('data-remaining')) || 0;
+                    totalRemaining += rem;
+                  });
+                  const remainEl = document.querySelector('.remain-amount');
+                  if (remainEl) remainEl.textContent = 'Remaining: ' + totalRemaining.toFixed(2);
+                } catch (e) { /* non-fatal, ignore */ }
+              } else {
+                // fallback: re-fetch full list
+                const fresh = await fetch('/api/repay-records/?clientNumber=' + encodeURIComponent(clientNumber)).then(r=>r.json());
+                renderRepayData(fresh);
+              }
+            } else {
+              // refresh data by re-fetching repay records
+              const fresh = await fetch('/api/repay-records/?clientNumber=' + encodeURIComponent(clientNumber)).then(r=>r.json());
+              renderRepayData(fresh);
+            }
           }catch(err){ msg.innerHTML = '<span class="text-danger">Error: '+ err.message +'</span>'; }
         }
 

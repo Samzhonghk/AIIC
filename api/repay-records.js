@@ -189,8 +189,9 @@ router.post('/payments', (req, res) => {
                 return res.status(500).json({ success: false, error: 'Repay row not found' });
             }
 
-            const expected = Number(repayRow.repay_amount) || 0;
-            const existingPaid = Number(repayRow.paid_amount) || 0;
+                const expected = Number(repayRow.repay_amount) || 0;
+                const existingPaid = Number(repayRow.paid_amount) || 0;
+                const remainingAmount = Math.max(expected - existingPaid, 0);
             const existingLate = Number(repayRow.existing_late_fee) || 0;
             const nowTs = Math.floor(Date.now()/1000);
             let lateFeeToApply = 0;
@@ -205,6 +206,8 @@ router.post('/payments', (req, res) => {
                 }
             }
 
+            // Note: overpayment checks have been removed by request; any amount will be recorded.
+
             const insertSql = `INSERT INTO repay_payments (repay_id, loan_id, client_id, amount, late_fee, paid_date, remark) VALUES (?, ?, ?, ?, ?, ?, ?)`;
             db.run(insertSql, [repay_id, loan_id, client_id, amount, lateFeeToApply, paidTs, remark || null], function (insErr) {
                 if (insErr) {
@@ -212,6 +215,8 @@ router.post('/payments', (req, res) => {
                     db.run('ROLLBACK');
                     return res.status(500).json({ success: false, error: 'Failed to record payment' });
                 }
+
+                const paymentId = this.lastID;
 
                 // recompute total paid for this repay_id (sum of amounts only)
                 db.get('SELECT COALESCE(SUM(amount),0) AS total_paid, COALESCE(SUM(late_fee),0) AS total_late_paid FROM repay_payments WHERE repay_id = ?', [repay_id], (sumErr, sums) => {
@@ -238,8 +243,27 @@ router.post('/payments', (req, res) => {
                             return res.status(500).json({ success: false, error: 'Failed to update repay summary' });
                         }
 
-                        db.run('COMMIT');
-                        return res.status(201).json({ success: true, payment_id: this.lastID, repay_id, total_paid: totalPaid, total_late_paid: totalLatePaid, late_fee_applied: lateFeeToApply, late_fee_total: newLateAggregate, status });
+                        // fetch updated repay row to return to client
+                        db.get('SELECT * FROM repay WHERE repay_id = ?', [repay_id], (getErr, updatedRepay) => {
+                            if (getErr) {
+                                console.error('Failed to fetch updated repay row:', getErr.message);
+                                db.run('ROLLBACK');
+                                return res.status(500).json({ success: false, error: 'Failed to fetch updated repay' });
+                            }
+
+                            db.run('COMMIT');
+                            return res.status(201).json({
+                                success: true,
+                                payment_id: paymentId,
+                                repay_id,
+                                total_paid: totalPaid,
+                                total_late_paid: totalLatePaid,
+                                late_fee_applied: lateFeeToApply,
+                                late_fee_total: newLateAggregate,
+                                status,
+                                repay: updatedRepay
+                            });
+                        });
                     });
                 });
             });
