@@ -137,9 +137,44 @@ router.post('/', (req, res) => {
 
         // generate schedule and insert into repay table
         const schedule = [];
-        const firstRepayDateStr = p.firstRepayDate || p.first_repay_date || createdDate;
-        let dt = new Date(firstRepayDateStr);
-        if (isNaN(dt.getTime())) dt = new Date(createdDate);
+        // determine first repayment date: use provided firstRepayDate if valid,
+        // otherwise start from the NEXT Friday after the loan created date
+        const firstRepayDateStr = p.firstRepayDate || p.first_repay_date || '';
+
+        function getNextFriday(afterDate) {
+            // return the Friday of the NEXT calendar week relative to afterDate
+            // e.g. if afterDate is any day in week W, return Friday in week W+1
+            const d = new Date(afterDate);
+            if (isNaN(d.getTime())) return null;
+            // compute current week's Monday
+            const dow = d.getDay(); // 0=Sun,1=Mon,...6=Sat
+            // days since Monday: Monday->0, Sunday->6
+            const daysSinceMonday = (dow + 6) % 7;
+            const monday = new Date(d);
+            monday.setDate(d.getDate() - daysSinceMonday);
+            // next week's Monday
+            const nextMonday = new Date(monday);
+            nextMonday.setDate(monday.getDate() + 7);
+            // Friday = nextMonday + 4 days
+            const nextFriday = new Date(nextMonday);
+            nextFriday.setDate(nextMonday.getDate() + 4);
+            nextFriday.setHours(0,0,0,0);
+            return nextFriday;
+        }
+
+        let dt = null;
+        if (firstRepayDateStr) {
+            const candidate = new Date(firstRepayDateStr);
+            if (!isNaN(candidate.getTime())) {
+                dt = candidate;
+            }
+        }
+        // fallback: compute next Friday after createdDate
+        if (!dt || isNaN(dt.getTime())) {
+            const createdDt = new Date(createdDate);
+            const nf = getNextFriday(createdDt);
+            dt = nf || createdDt;
+        }
         for (let i = 0; i < term; i++) {
             const amount = (i === term - 1) ? Math.round((totalPayment - (repayAmount * (term - 1))) * 100) / 100 : repayAmount;
             const repayDateUnix = Math.floor(dt.getTime() / 1000);
