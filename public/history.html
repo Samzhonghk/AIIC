@@ -43,7 +43,9 @@
             <input type="text" class="form-control" id="searchInput" placeholder="Enter client number" required>
             <button class="btn btn-primary" type="submit">Search</button>
         </form>
-        <a href="dashboard.html" class="btn btn-secondary mt-2">Back to Dashboard</a>
+    <!-- 快速进入客户列表 -->
+    <a href="client_list.html" class="btn btn-secondary mt-2 me-2">Check Client List</a>
+    <a href="dashboard.html" class="btn btn-secondary mt-2">Back to Dashboard</a>
     </div>
     
     <!-- <div class="mb-3 row">
@@ -143,7 +145,7 @@
                         <td>${r.created_date}</td>
                         <td>${r.payment_due_date}</td>
                         <td>${r.lender_name}</td>
-                        <td><a href="edit_customer_info.html?record_id=${r.record_id}&customer_id=${customer.id}" class="btn btn-sm btn-primary">Details</a></td>
+                        <td><a href="/repay_schedule.html?clientNumber=${customer.id}" class="btn btn-sm btn-primary">Details</a></td>
                     </tr>
                 `;
             });

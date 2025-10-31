@@ -126,13 +126,15 @@
             formData.append('phone', document.getElementById('clientPhone').value);
             formData.append('occupation', document.getElementById('clientOccupation').value);
             formData.append('address', document.getElementById('clientAddress').value);
-            formData.append('passport_number', document.getElementById('clientPassportNumber').value);
-            formData.append('driver_license_number', document.getElementById('clientDriverLicenseNumber').value);
-            formData.append('owner_of_vehicle_number', document.getElementById('clientOwnerOfVehicleNumber').value);
-            formData.append('business_license_number', document.getElementById('clientBusinessLicenseNumber').value);
-            formData.append('vehicle_number_plate', document.getElementById('clientVehicleNumberPlate').value);
+            formData.append('passport_number', document.getElementById('clientPassportNumber').value || '');
+            formData.append('driver_license_number', document.getElementById('clientDriverLicenseNumber').value || '');
+            formData.append('owner_of_vehicle_number', document.getElementById('clientOwnerOfVehicleNumber').value || '');
+            formData.append('business_license_number', document.getElementById('clientBusinessLicenseNumber').value || '');
+            formData.append('vehicle_number_plate', document.getElementById('clientVehicleNumberPlate').value || '');
+            console.log('passport:'+formData.get('passport_number'));
+            console.log('driver_license_number:'+formData.get('driver_license_number'));
             // formData.append('photo', document.getElementById('clientPhoto').files[0]);
-            fetch(`http://localhost:3000/api/clients/${clientId}`, {
+            fetch(`/api/clients/${clientId}`, {
                 method: 'PUT',
                 body: formData
             })
@@ -145,8 +147,9 @@
                     alert(result.message || 'Update failed');
                 }
             })
-            .catch(() => {
-                alert('Network error');
+            .catch((err) => {
+                alert('Network error: ' + err.message);
+                console.error('Network error details:', err.message);
             });
         });
     </script>

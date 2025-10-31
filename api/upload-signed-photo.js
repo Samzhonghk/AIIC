@@ -56,24 +56,31 @@ router.post('/', upload.single('signedPhoto'), (req, res) => {
                 return res.status(404).json({ success: false, message: 'Loan number and customer ID do not match' });
             }
 
-            // Update loan record with the signed photo path
-            db.run(
-                'UPDATE loans SET signed_photo = ? WHERE loan_number = ? AND customer_id = ?',
-                [signedPhotoPath, loanNumber, customerId],
-                (err) => {
-                    if (err) {
-                        console.error('Failed to save signed photo to database:', err.message);
+            // Update loan record with the signed photo path and mark contract as signed, then unhide repay schedule rows
+            db.serialize(() => {
+                db.run('BEGIN TRANSACTION');
+                db.run(
+                    'UPDATE loans SET signed_photo = ?, contract_signed = 1 WHERE loan_number = ? AND customer_id = ?',
+                    [signedPhotoPath, loanNumber, customerId],
+                    (err) => {
+                        if (err) console.error('Failed to update loan signed_photo/contract_signed:', err.message);
+                    }
+                );
+
+                // Note: we only set loan.contract_signed here; repay visibility is controlled by loan.contract_signed in queries
+
+                db.run('COMMIT', (cErr) => {
+                    if (cErr) {
+                        console.error('Failed to commit transaction for signed photo update:', cErr.message);
                         return res.status(500).json({ success: false, message: 'Failed to save signed photo to database' });
                     }
-
-                    res.json({
+                    return res.json({
                         success: true,
                         message: 'Signed photo uploaded successfully',
-                        // redirect to the static page under /public so the browser can load it
                         redirectUrl: `/customer-info.html?loanNumber=${encodeURIComponent(loanNumber)}&customerId=${encodeURIComponent(customerId)}`
                     });
-                }
-            );
+                });
+            });
         }
     );
 });
