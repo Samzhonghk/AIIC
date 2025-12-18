@@ -17,6 +17,11 @@ app.use(bodyParser.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// 根路径重定向到 login.html
+app.get('/', (req, res) => {
+    res.redirect('/login.html');
+});
+
 // 用户相关接口分离
 app.use('/api/clients', clientsRouter);
 app.use('/api/login', loginRouter);
