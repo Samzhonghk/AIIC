@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-    "test": "mocha --exit"
+    "test": "mocha --exit",
+    "postinstall": "npm rebuild sqlite3"
   },
   "dependencies": {
     "body-parser": "^2.2.0",
