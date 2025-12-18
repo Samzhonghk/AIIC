@@ -1,14 +1,10 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
 const jwt = require('jsonwebtoken');
+const db = require('../db');
 
 const router = express.Router();
 const SECRET_KEY = 'your_secret_key';
 
-// 初始化数据库
-const db = new sqlite3.Database('./db.sqlite', (err) => {
-    if (err) throw err;
-});
 
 // 创建用户表（如不存在）
 db.run(`CREATE TABLE IF NOT EXISTS users (

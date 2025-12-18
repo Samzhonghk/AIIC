@@ -1,16 +1,8 @@
 const express = require('express');
-const sqlite3 = require('sqlite3');
+const db = require('../db');
 
 const router = express.Router();
 
-// Initialize database connection
-const db = new sqlite3.Database('./db.sqlite', (err) => {
-    if (err) {
-        console.error('Failed to connect to database:', err.message);
-    } else {
-        console.log('Connected to database');
-    }
-});
 
 // Endpoint to fetch customer information
 router.get('/', (req, res) => {

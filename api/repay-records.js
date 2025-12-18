@@ -1,18 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const db = require('../db');
 
-// Connect to SQLite database using an absolute path relative to this file
-const dbPath = path.join(__dirname, '..', 'db.sqlite');
-console.log('repay-records: opening database at', dbPath);
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error('Error connecting to database:', err.message);
-    } else {
-        console.log('Connected to the SQLite database at', dbPath);
-    }
-});
 
 // Run lightweight migrations on startup: ensure repay has summary columns and create repay_payments table
 db.serialize(() => {

@@ -1,18 +1,9 @@
 const express = require('express');
-const sqlite3 = require('sqlite3');
 const path = require('path');
+const db = require('../db');
 
 const router = express.Router();
 
-// open database (same file used elsewhere)
-const dbPath = path.join(__dirname, '..', 'db.sqlite');
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error('records.js: failed to open database', err.message);
-    } else {
-        console.log('records.js: connected to database');
-    }
-});
 
 router.get('/:id', (req, res) => {
     const clientId = req.params.id;

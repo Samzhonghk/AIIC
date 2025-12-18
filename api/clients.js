@@ -1,14 +1,10 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
 const multer = require('multer');
 const path = require('path');
+const db = require('../db');
 
 const router = express.Router();
 
-// 初始化数据库
-const db = new sqlite3.Database('./db.sqlite', (err) => {
-    if (err) throw err;
-});
 
 
 

@@ -1,12 +1,8 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const db = require('../db');
 
 const router = express.Router();
 
-// 使用与其他模块相同的数据库文件
-const db = new sqlite3.Database('./db.sqlite', (err) => {
-    if (err) throw err;
-});
 
 // 创建 loans 表
 const createLoansTable = `CREATE TABLE IF NOT EXISTS loans (
